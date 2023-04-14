@@ -3,6 +3,8 @@
 @title{Etl: Expresson Transformation Language}
 @author{xSK, ported to Racket and lightly edited by Jesse P. Hamlin-Navias}
 
+@defmodulelang[etl]
+
 The origional etl implementation can be found
 @hyperlink["https://github.com/iota-xSK/etl"]{here}.
 
