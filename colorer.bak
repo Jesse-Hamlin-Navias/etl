@@ -1,0 +1,29 @@
+#lang br
+(require "lexer.rkt" brag/support)
+(provide etl-colorer)
+
+(define (etl-colorer port)
+  (define (handle-lexer-error excn)
+    (define excn-srclocs (exn:fail:read-srclocs excn))
+    (srcloc-token (token 'ERROR) (car excn-srclocs)))
+  (define srcloc-tok
+    (with-handlers ([exn:fail:read? handle-lexer-error])
+      (etl-lexer port)))
+  (match srcloc-tok
+    [(? eof-object?) (values srcloc-tok 'eof #f #f #f)]
+    [else
+     (match-define
+       (srcloc-token
+        (token-struct type val _ _ _ _ _)
+        (srcloc _ _ _ posn span)) srcloc-tok)
+        (define start posn)
+     (define end (+ start span))
+     (match-define (list cat paren)
+       (match type
+         ['RULE '(string #f)]
+         ['LEFT-PAREN '(parenthesis #f)]
+         ['RIGHT-PAREN '(parenthesis #f)]
+         ['ARROW '(string #f)]
+         ['OP '(symbol #f)]
+         [else '(constant #f)]))
+     (values val cat paren start end)]))

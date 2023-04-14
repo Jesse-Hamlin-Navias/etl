@@ -1,0 +1,1 @@
+("8.5" ta6nt ("c12b3f43bfe8ecc4b47165766d50c21bb9a15440" . "0d8d271a32e7342817058ee041359659982379c0") (collects #"br" #"quicklang.rkt") (collects #"errortrace" #"errortrace-key.rkt") (collects #"racket" #"function.rkt") (collects #"racket" #"runtime-config.rkt") (collects #"syntax" #"apply-transformer.rkt") (collects #"syntax" #"parse" #"define.rkt"))

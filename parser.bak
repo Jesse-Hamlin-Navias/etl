@@ -1,0 +1,15 @@
+#lang brag
+etl-program: rules expressions
+
+rules: () | rule | rules2 rule
+@rules2: rule | rules2 rule
+rule: /RULE /VARIABLE list /ARROW list
+list: /LEFT-PAREN r-exp2 r-exp2 /RIGHT-PAREN | r-variable | OP
+@r-exp2: list | r-variable | OP
+@r-variable: VARIABLE | /LEFT-PAREN VARIABLE /RIGHT-PAREN
+
+@expressions: () | list | expressions2 list
+@expressions2: list | expressions2 list
+;expression: /LEFT-PAREN expression2 expression2 /RIGHT-PAREN | variable | OP
+;@expression2: expression | variable | OP
+@variable: VARIABLE | /LEFT-PAREN VARIABLE /RIGHT-PAREN

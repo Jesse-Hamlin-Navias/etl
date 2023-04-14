@@ -1,0 +1,1 @@
+("8.5" ta6nt ("2a49070f00f7ee8a19bc19e553a76095239ed35c" . "429891e6d6f532684199b2537c97cb5ea41949e1") (collects #"br" #"quicklang.rkt") (collects #"etl" #"parser.rkt") (collects #"etl" #"tokenizer.rkt") (collects #"racket" #"runtime-config.rkt"))

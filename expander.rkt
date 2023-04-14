@@ -1,0 +1,143 @@
+#lang br/quicklang
+
+(define-macro (etl-module-begin PROGRAM)
+  #'(#%module-begin
+     PROGRAM))
+(provide (rename-out [etl-module-begin #%module-begin]))
+
+(define changes #t)
+;(define r (lambda (m) '()))
+
+(define (execute expressions rules)
+  ;(print "execute ")
+  (if (null? expressions) (void)
+      (begin (set! changes #t)
+             (display (step (car expressions) rules))
+             (newline)
+             (execute (cdr expressions) rules)
+             ))
+  )
+
+(define (step ex rules)
+  ;(display "step: ") (print ex) (newline)
+  ;(if changes (begin (display "success! ") (set! changes #f) (step (replace ex))) ex)
+  (if changes (begin (set! changes #f) (step (replace ex rules) rules)) ex)
+  )
+
+(define (replace ex rules)
+  ;(display "replace: ") (print ex) (newline)
+  (if changes ex
+  (let ([new-ex (rules ex)])
+    (if (and (boolean? new-ex) (not new-ex))
+        (if (list? ex)
+            (if (= 1 (length ex))
+                (replace (first ex) rules)
+                (list (replace (first ex) rules) (replace (second ex) rules)))
+            ex)
+        (begin (set! changes #t) new-ex)
+        )
+    ))
+  )
+
+(define-macro (run RULES EXPRESSION ...)
+  #'(execute (list EXPRESSION ...) RULES)
+  )
+(provide run)
+
+(define-macro (rules RULE ...)
+  #'(lambda (m) (match m RULE ... [_ #f]))
+  )
+(provide rules)
+
+(define-macro (rule FORM RESULT)
+  #'[FORM RESULT]
+  )
+(provide rule)
+
+#;(define-macro (expression EXP)
+  #'(quote EXP)
+  )
+;(provide expression)
+
+(define-macro (variable V)
+  #'(unquote V)
+  )
+(provide variable)
+
+(require (for-syntax racket/function
+                     syntax/apply-transformer)
+         syntax/parse/define)
+
+(define-syntax ($expand stx)
+  (raise-syntax-error #f "illegal outside an ‘expand-inside’ form" stx))
+
+(begin-for-syntax
+  (define-syntax-class do-expand-inside
+    #:literals [$expand]
+    #:attributes [expansion]
+    [pattern {~or $expand ($expand . _)}
+             #:with :do-expand-inside (do-$expand this-syntax)]
+    [pattern (a:do-expand-inside . b:do-expand-inside)
+             #:attr expansion (datum->syntax (if (syntax? this-syntax) this-syntax #f)
+                                             (cons (attribute a.expansion) (attribute b.expansion))
+                                             (if (syntax? this-syntax) this-syntax #f)
+                                             (if (syntax? this-syntax) this-syntax #f))]
+    [pattern _ #:attr expansion this-syntax])
+  
+
+  (define (do-$expand stx)
+    (syntax-parse stx
+      [(_ {~and form {~or trans (trans . _)}})
+       #:declare trans (static (disjoin procedure? set!-transformer?) "syntax transformer")
+       (local-apply-transformer (attribute trans.value) #'form 'expression)])))
+
+(define-syntax-parser expand-inside
+  #:track-literals
+  [(_ form:do-expand-inside) #'form.expansion])
+
+(define-for-syntax (rule-expand mrule mform mresult)
+  (with-syntax ([ex-mform (exp-expand mform)]
+                [ex-mres (exp-expand mresult)])
+ #'($expand (mrule ex-mform ex-mres)))
+  )
+
+(define-for-syntax (exp-expand m)
+  (cond [(pair? m) #`($expand (r-exp 
+                               #,(exp-expand (car m))
+                               #,(exp-expand (cdr m))))]
+        [(list? m) #`#,(map exp-expand m)]
+        [else #'($expand m)])
+  )
+
+(define-syntax (etl-program stx)
+  (syntax-case stx (rules rule)
+    [(_ (rules (rule mform mresult) ...) mexp ...)
+     #'(expand-inside (run
+                       (rules
+                        ($expand (rule (quasiquote ($expand mform)) (quasiquote ($expand mresult)))) ...)
+                       (quote mexp) ...))])
+        )
+(provide etl-program)
+
+(define-syntax (rlist stx)
+  (syntax-case stx ()
+    [(_ a b)
+     #'(($expand a) ($expand b))]
+    [(_ a)
+     #'(($expand a))])
+        )
+(provide rlist)
+
+(define-syntax (r-variable stx)
+  (syntax-case stx ()
+    [(_ var)
+     #'(unquote var)])
+        )
+(provide r-variable)
+
+(define-syntax (r-op stx)
+  (syntax-case stx ()
+    [(_ str)
+     #'str])
+        )
+(provide r-op)
