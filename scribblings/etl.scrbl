@@ -5,7 +5,7 @@
 
 @defmodulelang[etl]
 
-The origional etl implementation can be found
+The original etl implementation can be found
 @hyperlink["https://github.com/iota-xSK/etl"]{here}.
 
 Etl (pronounced like "nettle" without the n)
